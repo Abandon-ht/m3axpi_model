@@ -44,7 +44,7 @@ mv coco_rubbish_dataset-main rubbish
 
 ```bash
 cd ~/m3axpi
-git clone -b v6.2 https://github.com/ultralytics/yolov5.git  # clone
+git clone -b v7.0 https://github.com/ultralytics/yolov5.git  # clone
 cd yolov5
 pip install -r requirements.txt  # install
 ```
