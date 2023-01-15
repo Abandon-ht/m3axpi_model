@@ -1,0 +1,77 @@
+# my_config.prototxt
+
+# 基本配置参数：输入输出
+input_type: INPUT_TYPE_ONNX
+
+output_type: OUTPUT_TYPE_JOINT
+
+# 选择硬件平台
+target_hardware: TARGET_HARDWARE_AX620
+
+# CPU 后端选择，默认采用 AXE
+cpu_backend_settings {
+    onnx_setting {
+        mode: DISABLED
+    }
+    axe_setting {
+        mode: ENABLED
+        axe_param {
+            optimize_slim_model: true
+        }
+    }
+}
+
+# input
+src_input_tensors {
+    color_space: TENSOR_COLOR_SPACE_RGB
+}
+
+dst_input_tensors {
+    color_space: TENSOR_COLOR_SPACE_RGB
+}
+
+# neuwizard 工具的配置参数
+neuwizard_conf {
+    operator_conf {
+        input_conf_items {
+            attributes {
+                input_modifications {
+                    affine_preprocess {
+                        slope: 1
+                        slope_divisor: 255
+                        bias: 0
+                    }
+                }
+                # input_modifications {
+                #     input_normalization {
+                #         mean: [0,0,0]
+                #         std: [0.5,0.5,0.5]
+                #     }
+                # }
+            }
+        }
+    }
+    dataset_conf_calibration {
+        path: "/data/dataset/rubbish_1000.tar" # 数据集图片的 tar 包，用于编译过程中对模型校准
+        type: DATASET_TYPE_TAR         # 数据集类型：tar 包
+        size: 256                      # 编译过程中校准所需要的实际数据个数为 256
+    }
+    dataset_conf_error_measurement {
+        path: "/data/dataset/rubbish_1000.tar" # 用于编译过程中对分
+        type: DATASET_TYPE_TAR
+        size: 4                        # 对分过程所需实际数据个数为 4
+        batch_size: 1
+    }
+    
+}
+
+dst_output_tensors {
+    tensor_layout:NHWC
+}
+
+# pulsar compiler 的配置参数
+pulsar_conf {
+    ax620_virtual_npu: AX620_VIRTUAL_NPU_MODE_111
+    batch_size: 1
+    debug : false
+}
