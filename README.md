@@ -299,7 +299,7 @@ mv ~/m3axpi/datasets/rubbish/images/rubbish_1000.tar ~/m3axpi/dataset
 
 ![](./images/031.png)
 
-### 搭建模型转换环境
+### 七、搭建模型转换环境
 
 onnx 模型需要转换为 joint 模型才能在 m3axpi 运行,所以需要使用 pulsar 模型转换工具。注意 pb、tflite、weights、paddle 等模型,需要先转换为 onnx 模型才能使用 pulsar 模型转换工具
 
@@ -439,7 +439,7 @@ pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config 
 
 ![](./images/039.png)
 
-### 部署
+### 八、部署
 
 请确认经过了训练后拥有以下文件，最起码得得到 `yolov5s_rubbish.joint` 喔。
 
@@ -471,7 +471,7 @@ pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config 
 
 现在我们有两种部署方式，第一种是只验证模型推理一张图片结果，第二种是部署到板子上进行摄像头或网络的实时推理。
 
-## ax-sample
+## 1. ax-sample
 
 项目主页 https://github.com/AXERA-TECH/ax-samples
 
@@ -518,7 +518,7 @@ if (AXERA_TARGET_CHIP MATCHES "ax620a")   # ax620 support
 
 可以见到已经能够识别目标，这一切工作顺利，接下来要对其进行实时部署推流。
 
-## ax-pipeline
+## 2. ax-pipeline
 
 项目主页 https://github.com/AXERA-TECH/ax-pipeline
 
