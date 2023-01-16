@@ -178,7 +178,7 @@ python export.py --include onnx --opset 11 --weights./runs/train/exp/weights/bes
 
 ### 五、修改 ONNX 模型
 
-1.脚本修改 ONNX 模型
+1. 脚本修改 ONNX 模型
 
 可以使用以下脚本修改模型,注意如果用 torch1.13.0 及之后版本导出的模型,请使用下面介绍方法2图形化修改模型
 
@@ -220,7 +220,7 @@ python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output 
 
 ![](./images/016a.png)
 
-2.图形化修改 ONNX 模型
+2. 图形化修改 ONNX 模型
 
 也可以使用图形化修改模型,使用以下命令拉取源码仓库
 
