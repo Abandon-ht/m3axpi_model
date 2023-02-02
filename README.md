@@ -8,7 +8,7 @@ YOLOv5 是<a href="https://ultralytics.com"> Ultralytics </a>公司于 2020 年 
 
 ### 开始
 
-![](流程图)
+![](./images/000.png)
 
 首先创建工作目录,以下所有操作均在此目录内。
 
