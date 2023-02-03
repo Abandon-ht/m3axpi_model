@@ -2,9 +2,11 @@
 ### 介绍
 YOLOv5 是<a href="https://ultralytics.com"> Ultralytics </a>公司于 2020 年 6 月 9 日开源的 2d 实时目标检测算法。涵盖 yolov5n、yolov5n6、yolov5s、yolov5s6、yolov5m、yolov5m6、yolov5l、yolov5l6、yolov5x、yolov5x6 等十几个模型。YOLOv5 具有训练速度快、推理时间短、非常易于训练、方便部署等优点。YOLOv5 的网络结构可以分为intput、backbone、neck、head 四个部分。
 
-本教程讲解 YOLOv5 的模型训练并用 Sipeed 公司的开发板 m3axpi 进行部署，了解产品请看 https://wiki.sipeed.com/m3axpi 。
-
 ![](./images/index.jpg)
+
+本教程讲解 YOLOv5 的模型训练并用 Sipeed 公司的开发板 m3axpi 进行部署，了解产品请看 https://wiki.sipeed.com/m3axpi 以下为实拍效果。
+
+https://user-images.githubusercontent.com/32978053/216542487-0d17a9e4-ca81-4e67-a087-4ecf18b34feb.mp4
 
 ### 开始
 
