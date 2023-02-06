@@ -180,9 +180,9 @@ python export.py --include onnx --opset 11 --weights./runs/train/exp/weights/bes
 
 ### 五、修改 ONNX 模型
 
-1. 脚本修改 ONNX 模型
+因为导出的 onnx 模型带有后处理,而部署到 m3axpi 上的 YOLOv5 模型是通过代码实现的的后处理。所以需要删除模型中后处理这部分。可以使用以下脚本修改模型,注意如果用 torch1.13.0 及之后版本导出的模型,请使用下面介绍方法2图形化修改模型
 
-可以使用以下脚本修改模型,注意如果用 torch1.13.0 及之后版本导出的模型,请使用下面介绍方法2图形化修改模型
+1. 脚本修改 ONNX 模型
 
 ```python
 import argparse
