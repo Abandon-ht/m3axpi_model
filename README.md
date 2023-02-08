@@ -506,7 +506,7 @@ if (AXERA_TARGET_CHIP MATCHES "ax620a")   # ax620 support
 
 ![](./yolov5s_result/images/11.png)
 
-可见它是由 `home/ax-samples/examples/ax_yolov5s_steps.cc` 修改而来，主要就是类别和 ANCHORS 上的改动，所以使用它就可以推理一张图片给我们的板子。
+可见它是由 `home/ax-samples/examples/ax_yolov5s_steps.cc` 修改而来，这里的CLASS_NAMES对应自己训练的模型类别名字。CLS_NUM对应自己训练的模型类别数量。使用它就可以推理一张图片给我们的板子。
 这里我从网上随便找了一张图像，随便拿个常见的电池垃圾。
 
 ![](./yolov5s_result/images/12.png)
