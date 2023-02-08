@@ -220,6 +220,11 @@ python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output 
 
 修改后的模型如同所示,三个输出分别为 onnx::Reshape_329、onnx::Reshape_367、onnx::Reshape_405
 
+注意：这里我演示的输出矩阵为 1 * 255 * 80 * 80 分别是 batch size(1), filters(255) = ( class numbers(80) + bbox(4)(x, y, h, w) + obj(1) ) * anchor numbers(3),  h, w
+
+实际上这个垃圾分类模型的三个输出矩阵为 1 * ((16+4+1) * 3) * 80 * 80, 1 * ((16+4+1) * 3) * 40 * 40, 1 * ((16+4+1) * 3) * 20 * 20
+
+
 ![](./images/016a.png)
 
 2. 图形化修改 ONNX 模型
