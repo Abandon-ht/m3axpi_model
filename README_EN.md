@@ -436,5 +436,5 @@ The converted model yolov5s_rubbish.joint can be found in the working directory
 
 ### 8. Deployment
 
-Please refer to https://github.com/Abandon-ht/ax-samples/edit/main/README_EN.md
+Please refer to https://github.com/AXERA-TECH/ax-samples/blob/main/README_EN.md
 (to be continued)
