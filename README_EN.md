@@ -44,6 +44,7 @@ git clone https://github.com/Abandon-ht/coco_rubbish_dataset.git rubbish
 ```
 3. Download using command in terminal
 
+```bash
 mkdir datasets && cd datasets
 wget https://github.com/Abandon-ht/coco_rubbish_dataset/archive/refs/heads/main.zip
 unzip coco_rubbish_dataset-main.zip
