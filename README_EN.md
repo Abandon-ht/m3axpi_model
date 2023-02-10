@@ -12,7 +12,7 @@ YOLOv5 is a 2D real-time object detection model, open sourced by <a href="https:
 
 ![](./images/index.jpg)
 
-This tutorial explains the model training of YOLOv5 and deploy with Sipeed's development board m3axpi, Learn about the product at https://wiki.sipeed.com/m3axpi This is the actual shooting effect.
+This tutorial explains the model training of YOLOv5 and deploy with Sipeed's development board m3axpi, Learn about the product at https://wiki.sipeed.com/en/m3axpi This is the actual shooting effect.
 
 https://user-images.githubusercontent.com/32978053/216542487-0d17a9e4-ca81-4e67-a087-4ecf18b34feb.mp4
 
