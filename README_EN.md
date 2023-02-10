@@ -8,7 +8,7 @@ English | [简体中文](README.md)
 
 # [m3axpi] YOLOv5 train and convert model guide
 ### Introduction
-YOLOv5 is a 2D real-time object detection algorithm open sourced by <a href="https://ultralytics.com"> Ultralytics </a>on June 9, 2020. Including multiple models. For instance yolov5n, yolov5n6, yolov5s, yolov5s6, yolov5m, yolov5m6, yolov5l, yolov5l6, yolov5x, yolov5x6. YOLOv5 has many advantages. For instance fast training speed, little inference time, easy to train and deploy. The neural network structure of YOLOv5 can be divided into four parts intput, backbone, neck, head.
+YOLOv5 is a 2D real-time object detection model, open sourced by <a href="https://ultralytics.com"> Ultralytics </a>on June 9, 2020. Including multiple models. For instance yolov5n, yolov5n6, yolov5s, yolov5s6, yolov5m, yolov5m6, yolov5l, yolov5l6, yolov5x, yolov5x6. YOLOv5 has many advantages. For instance fast training speed, little inference time, easy to train and deploy. The neural network structure of YOLOv5 can be divided into four parts intput, backbone, neck, head.
 
 ![](./images/index.jpg)
 
