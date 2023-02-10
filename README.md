@@ -226,7 +226,7 @@ python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output 
 
 ![](./images/015.png)
 
-修改后的模型如同所示,三个输出分别为 onnx::Reshape_329、onnx::Reshape_367、onnx::Reshape_405
+修改后的模型如图所示,三个输出分别为 onnx::Reshape_329、onnx::Reshape_367、onnx::Reshape_405
 
 注意：这里我演示的输出矩阵为 1 * 255 * 80 * 80 分别是 batch size(1), filters(255) = ( class numbers(80) + bbox(4)(x, y, h, w) + obj(1) ) * anchor numbers(3),  h, w
 
@@ -296,7 +296,7 @@ python app.py
 
 ### 六、打包训练图片
 
-进入数据集的图片目录,使用以下命令打包图片为,注意文件的扩展名是 .tar
+进入数据集的图片目录,使用以下命令打包图片为rubbish_1000.tar,注意文件的扩展名是 .tar
 
 ```bash
 cd  ~/m3axpi/datasets/rubbish/images/
@@ -440,6 +440,7 @@ pulsar_conf {
 pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config config/yolov5s_rubbish.prototxt --output_config yolov5s_rubbish.prototxt
 ```
 开始转换
+
 ![](./images/036.png)
 
 转换时间较长,请耐心等待
