@@ -2,10 +2,10 @@
 
 <div align="center">
 
-English | [简体中文](README_zh-CN.md)
+[English](README.md) | 简体中文
 
 </div>
 
-m3axpi AI Development Guide
+m3axpi AI 开发向导
 - [x] [YOLOv5](./yolov5)
 - [x] [YOLOv8](./yolov8)
