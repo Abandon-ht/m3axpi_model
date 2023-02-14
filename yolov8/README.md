@@ -6,13 +6,13 @@ English | [简体中文](README_zh-CN.md)
 
 </div>
 
-# [m3axpi] YOLOv5 train and convert model guide
+# [m3axpi] YOLOv8 train and convert model guide
 ### Introduction
-YOLOv5 is a 2D real-time object detection model, open sourced by <a href="https://ultralytics.com"> Ultralytics </a>on June 9, 2020. Including multiple models. For instance yolov5n, yolov5n6, yolov5s, yolov5s6, yolov5m, yolov5m6, yolov5l, yolov5l6, yolov5x, yolov5x6. YOLOv5 has many advantages. For instance fast training speed, little inference time, easy to train and deploy. The neural network structure of YOLOv5 can be divided into four parts intput, backbone, neck, head.
+YOLOv8 is a 2D real-time object detection model, open sourced by <a href="https://ultralytics.com"> Ultralytics </a>on January 10, 2023. Including multiple models. For instance yolov8n, yolov8s, yolov8m, yolov8l, yolov8x, yolov8x6. YOLOv8 is a cutting-edge, state-of-the-art (SOTA) model that builds upon the success of previous YOLO versions and introduces new features and improvements to further boost performance and flexibility. YOLOv8 is designed to be fast, accurate, and easy to use, making it an excellent choice for a wide range of object detection, image segmentation and image classification tasks.
 
 ![](./images/index.jpg)
 
-This tutorial explains the model training of YOLOv5 and deploy with Sipeed's development board m3axpi, Learn about the product at https://wiki.sipeed.com/en/m3axpi This is the actual shooting effect.
+This tutorial explains the model training of YOLOv8 and deploy with Sipeed's development board m3axpi, Learn about the product at https://wiki.sipeed.com/en/m3axpi This is the actual shooting effect.
 
 https://user-images.githubusercontent.com/32978053/216542487-0d17a9e4-ca81-4e67-a087-4ecf18b34feb.mp4
 
@@ -55,29 +55,30 @@ All three methods can get the following 2 folders and 3 files
 
 ![](./images/002.png)
 
-### 2. Pull the yolov5 repository
+### 2. Pull the yolov8 repository
 
-In the m3axpi directory (not in the datasets directory), pull the yolov5 repository
+In the m3axpi directory (not in the datasets directory), pull the yolov8 repository
 
 ```bash
 cd ~/m3axpi
-git clone -b v7.0 https://github.com/ultralytics/yolov5.git  # clone
-cd yolov5
+git clone https://github.com/ultralytics/ultralytics.git  # clone
+cd ultralytics
 pip install -r requirements.txt  # install
+pip install -e '.[dev]'  # develop
 ```
 
 ![](./images/003.png)
 
-The yolov5 directory is shown in the picture:
+The yolov8 directory is shown in the picture:
 
 ![](./images/004.png)
 
-### 3. Train yolov5 models
+### 3. Train yolov8 models
 
-Switch to the working directory of yolov5, copy coco.yaml under the data folderl, and rename it to rubbish.yaml
+Switch to the working directory of ultralytics, copy coco.yaml under the data folderl, and rename it to rubbish.yaml
 
 ```bash
-cp data/coco.yaml data/rubbish.yaml
+cp ultralytics/yolo/data/datasets/coco.yaml ultralytics/yolo/data/datasets/rubbish.yaml
 ```
 
 Modify the path and classes name of the garbage classification dataset according to the picture
@@ -111,10 +112,10 @@ names:
 
 ![](./images/005.png)
 
-After the modification, train the yolov5s model with the following command
+After the modification, train the yolov8s model with the following command
 
 ```bash
-python train.py --data data/rubbish.yaml --cfg models/yolov5s.yaml --weights yolov5s.pt --batch-size -1 --epoch 20
+yolo task=detect mode=train model=yolov8s.pt data=rubbish.yaml batch=-1 epochs=20
 ```
 
 ![](./images/006.png)
@@ -123,7 +124,7 @@ The dataset is loaded successfully and the model training starts. If not loaded 
 
 ![](./images/007.png)
 
-After the training is completed, you can view the training log under the ./runs/train/exp/ folder
+After the training is completed, you can view the training log under the ./runs/detect/train/ folder
 
 PR_curve.png is the mAP_0.5 curve
 
@@ -138,151 +139,88 @@ results.png is all curves
 You can use the following command to predict the picture, note that you need to modify the path of the picture and the model to your own path
 
 ```bash
-python detect.py --source ../datasets/rubbish/images/IMG_20210311_213716.jpg --weights ./runs/train/exp/weights/best.pt
+yolo task=detect mode=predict model=./runs/detect/train/weights/best.pt source=../datasets/rubbish/images/IMG_20210311_213716.jpg save
 ```
 
 ![](./images/008.png)
 
-You can see the predicted images in the runs/detect/exp directory.
+You can see the predicted images in the runs/detect/predict directory.
 
 ![](./images/009.jpg)
 
+Modify ultralytics/nn/modules.py
+class Detect(nn.Module):
+
+```python
+    def forward(self, x):
+        shape = x[0].shape  # BCHW
+        dfl = []
+        cls = []
+        cls_idx = []
+        for i in range(self.nl):
+            if self.export:
+                dfl.append(self.cv2[i](x[i]))
+                xi = self.cv3[i](x[i])
+                cls.append(xi)
+                cls_idx.append(torch.argmax(xi, dim=1, keepdim=True))
+            else:
+                x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        if self.training:
+            return x
+        elif self.dynamic or self.shape != shape:
+            self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+        if self.export:
+            return dfl, cls, cls_idx
+        else:
+            box, cls = torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2).split((self.reg_max * 4, self.nc), 1)
+            dbox = dist2bbox(self.dfl(box), self.anchors.unsqueeze(0), xywh=True, dim=1) * self.strides
+            y = torch.cat((dbox, cls.sigmoid()), 1)
+            return y if self.export else (y, x)
+```
+
+Modify ultralytics/yolo/engine/exporter.py
+class Exporter:
+
+```python
+        # self.output_shape = tuple(y.shape) if isinstance(y, torch.Tensor) else tuple(tuple(x.shape) for x in y)
+        # LOGGER.info(f"\n{colorstr('PyTorch:')} starting from {file} with input shape {tuple(im.shape)} BCHW and "
+        #             f"output shape(s) {self.output_shape} ({file_size(file):.1f} MB)")
+```
+
 Use the following command to export the onnx model, pay attention to add the parameter opset=11
+
+```bash
+yolo task=detect mode=export model=./runs/detect/train/weights/best.pt format=onnx opset=11
+```
 
 ![](./images/010.png)
 
-```bash
-python export.py --include onnx --opset 11 --weights./runs/train/exp/weights/best.pt
-```
-
-The exported onnx model is in the runs/train/exp/weights directory
+The exported onnx model is in the runs/detect/train/weights directory
 
 ![](./images/010a.png)
 
-Enter netron.app in the browser address bar, Open the best.onnx file exported in the previous step, Check out the model structure of yolov5.
+Enter netron.app in the browser address bar, Open the best.onnx file exported in the previous step, Check out the model structure of yolov8.
 
 The input name of the model is 'images'
 
 ![](./images/011a.png)
 
-Using the model exported before torch1.13.0, the last three convolution (Conv) outputs end with onnx::Reshape_329. The ending numbers of the three convolution (Conv) outputs are not the same. The numbers at the end of your exported model may not be the same as mine.
+Using the model exported before torch1.13.0, the last three convolution (Conv) outputs end with dfl、cls、cls_index
 
-The output of the first Conv is onnx::Reshape_329
-
-![](./images/012a.png)
-
-The output of the second Conv is onnx::Reshape_367
-
-![](./images/013a.png)
-
-The output of the third Conv is onnx::Reshape_405
+The first output matrix are 1 * 64 * 80 * 80, 1 * 16 * 80 * 80, 1 * 1 * 80 * 80
 
 ![](./images/014a.png)
 
-### 5. Modify the ONNX model
+The second output matrix are 1 * 64 * 80 * 80, 1 * 16 * 80 * 80, 1 * 1 * 80 * 80
 
-Because the exported onnx model has post-processing, and the YOLOv5 model deployed on m3axpi is post-processing implemented through code. So you need to delete the post-processing part of the model. The following scripts can be used to modify the model. Note that if the model is exported with torch1.13.0 and later, please use method 2 described below to use a graphical method to modify the model
+![](./images/015a.png)
 
-1. Modify ONNX model with python script
-
-```python
-import argparse
-import onnx
-
-def onnx_sub():
-    onnx.utils.extract_model(opt.onnx_input, opt.onnx_output, opt.model_input, opt.model_output)
-
-def parse_opt():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--onnx_input', type=str, default='weights/yolov5s.onnx', help='model.onnx path(s)')
-    parser.add_argument('--onnx_output', type=str, default='weights/yolov5s_sub.onnx', help='model_sub.onnx path(s)')
-    parser.add_argument('--model_input', '--input', nargs='+', type=str, default=["images"], help='input_names')
-    parser.add_argument(
-        '--model_output', '--output', nargs='+', type=str, default=["onnx::Reshape_329",
-                                                                    "onnx::Reshape_367",
-                                                                    "onnx::Reshape_405"], help='output_names')
-    opt = parser.parse_args()
-    return opt
-
-if __name__ == "__main__":
-    opt = parse_opt()
-    sub = onnx_sub()
-
-```
-Create a new file named onnxcut.py and copy the above code
-
-Use the following command, be sure to replace the three outputs of the model with the output of the last three convolutions (Conv) of your model
-
-```bash
-python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output ./runs/train/exp/weights/best_cut.onnx --model_input images --model_output onnx::Reshape_329 onnx::Reshape_367 onnx::Reshape_405
-```
-
-![](./images/015.png)
-
-The modified model is shown in the picture, and the three outputs are onnx::Reshape_329, onnx::Reshape_367, onnx::Reshape_405
-
-Note: The output matrix I demonstrate here is 1 * 255 * 80 * 80, which are batch size(1), filters(255) = ( class numbers(80) + bbox(4)(x, y, h, w) + obj(1) ) * anchor numbers(3), h, w
-
-In fact, the three output matrices of this rubbish classification model are 1 * ((16+4+1) * 3) * 80 * 80, 1 * ((16+4+1) * 3) * 40 * 40, 1 * ((16+4+1) * 3) * 20 * 20
+The third output matrix are 1 * 64 * 40 * 40, 1 * 16 * 40 * 40, 1 * 1 * 40 * 40
 
 ![](./images/016a.png)
 
-2. use a graphical method to modify the model
-
-You can also modify the model using graphical methods, and use the following command to pull the source code repository
-
-```bash
-cd ~/m3axpi
-git clone https://github.com/ZhangGe6/onnx-modifier.git
-```
-
-![](./images/016b.png)
-
-The directory is as shown in the picture:
-
-![](./images/017.png)
-
-Enter the directory and use the following command to install the dependency package
-
-```bash
-cd onnx-modifier
-pip install onnx flask
-```
-![](./images/017a.png)
-
-Run the script with
-```bash
-python app.py
-```
-![](./images/017b.png)
-
-Enter http://127.0.0.1:5000 in the browser address bar. Open the best.onnx file exported in the third step, and modify the model structure.
-
-Select the Reshape after the last three convolutions (Conv) in turn, and click 'Delete With Children'
-
-![](./images/018a.png)
-
-Select the first one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_0', and click 'Add Output' to add the output
-
-![](./images/019a.png)
-
-Select the second Reshape, click 'Delete With Children'
-
-![](./images/020a.png)
-
-Select the second one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_1', click 'Add Output' to add the output
-
-![](./images/021a.png)
-
-Also select the third one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_2', click 'Add Output' to add the output
-
-![](./images/022a.png)
-
-Finally, download the model. The modified model can be found in the modified_onnx folder. The modified model name is modified_best.onnx
-
-![](./images/023.png)
-
-### 6. Pack training pictures
+### 5. Pack training pictures
 
 Enter the image directory of the dataset, use the following command to package the image as rubbish_1000.tar, note that the extension of the file is .tar
 
@@ -302,7 +240,7 @@ mv ~/m3axpi/datasets/rubbish/images/rubbish_1000.tar ~/m3axpi/dataset
 
 ![](./images/031.png)
 
-### 7. Create a model conversion environment
+### 6. Create a model conversion environment
 
 The onnx model needs to be converted to a joint model to run on m3axpi, so the pulsar model conversion tool needs to be used. Note that pb, tflite, weights, paddle and other models need to be converted to onnx models before using the pulsar model conversion tool
 
@@ -341,7 +279,6 @@ mkdir config onnx
 ![](./images/034a.png)
 
 Create a file named yolov8s_rubbish.prototxt under config, copy the following content to the file, and pay attention to modify the path of rubbish_1000.tar in the file
-
 ```
 # my_config.prototxt
 
@@ -423,10 +360,10 @@ pulsar_conf {
 ```
 ![](./images/035.png)
 
-Move the modified model file best_cut.onnx or modified_best.onnx to the onnx directory, and use the following command to convert the model: (note that the name of the modified model file is changed to your own model name)
+Move the export model file best.onnx to the onnx directory, and use the following command to convert the model: (note that the name of the modified model file is changed to your own model name)
 
 ```bash
-pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config config/yolov5s_rubbish.prototxt --output_config yolov5s_rubbish.prototxt
+pulsar build --input onnx/best.onnx --output yolov8s_rubbish.joint --config config/yolov8s_rubbish.prototxt --output_config yolov8s_rubbish.prototxt
 ```
 start converting
 ![](./images/036.png)
@@ -439,7 +376,7 @@ conversion complete
 
 ![](./images/038.png)
 
-The converted model yolov5s_rubbish.joint can be found in the working directory
+The converted model yolov8s_rubbish.joint can be found in the working directory
 
 ![](./images/039.png)
 

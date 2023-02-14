@@ -227,7 +227,7 @@ yolo task=detect mode=export model=./runs/detect/train/weights/best.pt format=on
 
 ![](./images/016a.png)
 
-### 六、打包训练图片
+### 五、打包训练图片
 
 进入数据集的图片目录,使用以下命令打包图片为rubbish_1000.tar,注意文件的扩展名是 .tar
 
@@ -247,7 +247,7 @@ mv ~/m3axpi/datasets/rubbish/images/rubbish_1000.tar ~/m3axpi/dataset
 
 ![](./images/031.png)
 
-### 七、搭建模型转换环境
+### 六、搭建模型转换环境
 
 onnx 模型需要转换为 joint 模型才能在 m3axpi 运行,所以需要使用 pulsar 模型转换工具。注意 pb、tflite、weights、paddle 等模型,需要先转换为 onnx 模型才能使用 pulsar 模型转换工具
 
@@ -286,6 +286,7 @@ mkdir config onnx
 ![](./images/034a.png)
 
 在 config 下创建一份命名为 yolov8s_rubbish.prototxt 的文件,复制以下内容到文件,注意修改文件中 rubbish_1000.tar 的路径
+
 ```
 # my_config.prototxt
 
@@ -367,7 +368,7 @@ pulsar_conf {
 ```
 ![](./images/035.png)
 
-移动编辑好的模型文件 best_cut.onnx 或 modified_best.onnx 到 onnx 目录,使用以下命令进行模型转换:(注意修改模型文件的名字改为自己的模型名字)
+移动导出的模型文件 best.onnx 到 onnx 目录,使用以下命令进行模型转换:(注意修改模型文件的名字改为自己的模型名字)
 
 ```bash
 pulsar build --input onnx/best.onnx --output yolov8s_rubbish.joint --config config/yolov8s_rubbish.prototxt --output_config yolov8s_rubbish.prototxt
@@ -390,5 +391,5 @@ pulsar build --input onnx/best.onnx --output yolov8s_rubbish.joint --config conf
 
 ### 八、部署
 
-https://github.com/AXERA-TECH/ax-samples
+请参阅 https://github.com/AXERA-TECH/ax-samples
 
