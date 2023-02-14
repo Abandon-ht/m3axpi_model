@@ -1,0 +1,14 @@
+{
+    "MODEL_TYPE": "MT_DET_YOLOV5",
+    "MODEL_PATH": "/home/yolov5s_rubbish.joint",
+    "ANCHORS": [
+        10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326
+    ],
+    "CLASS_NAMES": [
+        "battery", "pills", "bananas", "apples", "cans", "bottles", "ceram", "green vegatable",
+        "broccoli", "boxes", "glass", "cigarette", "orange", "eggshell", "spitball", "tile"
+    ],
+    "CLASS_NUM": 16,
+    "NMS_THRESHOLD": 0.45,
+    "PROB_THRESHOLD": 0.35
+}
