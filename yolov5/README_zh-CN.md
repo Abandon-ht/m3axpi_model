@@ -210,8 +210,6 @@ python export.py --include onnx --opset 11 --weights./runs/train/exp/weights/bes
 
 ![](./images/011a.png)
 
-使用 torch1.13.0 之前版本导出的模型,最后的三个卷积(Conv)输出是以 onnx::Reshape_329 结尾。三个卷积(Conv)输出的结尾数字不相同。你导出的模型结尾的数字可能与我的不相同。
-
 第一个 Conv 的输出是 output0 第二个 Conv 的输出是 330 第三个 Conv 的输出是 331
 
 ![](./images/012a.png)
