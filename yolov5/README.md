@@ -203,9 +203,7 @@ The input name of the model is 'images'
 
 ![](./images/011a.png)
 
-Using the model exported before torch1.13.0, the last three convolution (Conv) outputs end with onnx::Reshape_329. The ending numbers of the three convolution (Conv) outputs are not the same. The numbers at the end of your exported model may not be the same as mine.
-
-The output of the first Conv is onnx::Reshape_329 The output of the second Conv is onnx::Reshape_367 The output of the third Conv is onnx::Reshape_405
+The output of the first Conv is output0 The output of the second Conv is 330 The output of the third Conv is 331
 
 ![](./images/012a.png)
 
