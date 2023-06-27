@@ -154,6 +154,44 @@ python detect.py --source ../datasets/rubbish/images/IMG_20210311_213716.jpg --w
 
 ![](./images/009.jpg)
 
+修改 models/yolo.py class Detect(nn.Module):
+
+```python
+    def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+        #     bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+        #     x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+        # 
+        #     if not self.training:  # inference
+        #         if self.dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+        #             self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+        # 
+        #         if isinstance(self, Segment):  # (boxes + masks)
+        #             xy, wh, conf, mask = x[i].split((2, 2, self.nc + 1, self.no - self.nc - 5), 4)
+        #             xy = (xy.sigmoid() * 2 + self.grid[i]) * self.stride[i]  # xy
+        #             wh = (wh.sigmoid() * 2) ** 2 * self.anchor_grid[i]  # wh
+        #             y = torch.cat((xy, wh, conf.sigmoid(), mask), 4)
+        #         else:  # Detect (boxes only)
+        #             xy, wh, conf = x[i].sigmoid().split((2, 2, self.nc + 1), 4)
+        #             xy = (xy * 2 + self.grid[i]) * self.stride[i]  # xy
+        #             wh = (wh * 2) ** 2 * self.anchor_grid[i]  # wh
+        #             y = torch.cat((xy, wh, conf), 4)
+        #         z.append(y.view(bs, self.na * nx * ny, self.no))
+        # 
+        # return x if self.training else (torch.cat(z, 1),) if self.export else (torch.cat(z, 1), x)
+        return x
+```
+
+修改 export.py
+
+```python
+    # shape = tuple((y[0] if isinstance(y, tuple) else y).shape)  # model output shape
+    metadata = {'stride': int(max(model.stride)), 'names': model.names}  # model metadata
+    # LOGGER.info(f"\n{colorstr('PyTorch:')} starting from {file} with output shape {shape} ({file_size(file):.1f} MB)")
+```
+
 使用以下命令导出 onnx 模型,注意加上 opset=11 这个参数
 
 ![](./images/010.png)
@@ -174,127 +212,11 @@ python export.py --include onnx --opset 11 --weights./runs/train/exp/weights/bes
 
 使用 torch1.13.0 之前版本导出的模型,最后的三个卷积(Conv)输出是以 onnx::Reshape_329 结尾。三个卷积(Conv)输出的结尾数字不相同。你导出的模型结尾的数字可能与我的不相同。
 
-第一个 Conv 的输出是 onnx::Reshape_329
+第一个 Conv 的输出是 output0 第二个 Conv 的输出是 330 第三个 Conv 的输出是 331
 
 ![](./images/012a.png)
 
-第二个 Conv 的输出是 onnx::Reshape_367
-
-![](./images/013a.png)
-
-第三个 Conv 的输出是 onnx::Reshape_405
-
-![](./images/014a.png)
-
-### 五、修改 ONNX 模型
-
-因为导出的 onnx 模型带有后处理,而部署到 m3axpi 上的 YOLOv5 模型是通过代码实现的的后处理。所以需要删除模型中后处理这部分。可以使用以下脚本修改模型,注意如果用 torch1.13.0 及之后版本导出的模型,请使用下面介绍方法2图形化修改模型
-
-1. 脚本修改 ONNX 模型
-
-```python
-import argparse
-import onnx
-
-def onnx_sub():
-    onnx.utils.extract_model(opt.onnx_input, opt.onnx_output, opt.model_input, opt.model_output)
-
-def parse_opt():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--onnx_input', type=str, default='weights/yolov5s.onnx', help='model.onnx path(s)')
-    parser.add_argument('--onnx_output', type=str, default='weights/yolov5s_sub.onnx', help='model_sub.onnx path(s)')
-    parser.add_argument('--model_input', '--input', nargs='+', type=str, default=["images"], help='input_names')
-    parser.add_argument(
-        '--model_output', '--output', nargs='+', type=str, default=["onnx::Reshape_329",
-                                                                    "onnx::Reshape_367",
-                                                                    "onnx::Reshape_405"], help='output_names')
-    opt = parser.parse_args()
-    return opt
-
-if __name__ == "__main__":
-    opt = parse_opt()
-    sub = onnx_sub()
-
-```
-新建一个名字为 onnxcut.py 的文件,复制以上代码
-
-使用以下命令,注意一定要将模型的三个输出,替换为自己模型最后三个卷积(Conv)的输出
-
-```bash
-python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output ./runs/train/exp/weights/best_cut.onnx --model_input images --model_output onnx::Reshape_329 onnx::Reshape_367 onnx::Reshape_405
-```
-
-![](./images/015.png)
-
-修改后的模型如图所示,三个输出分别为 onnx::Reshape_329、onnx::Reshape_367、onnx::Reshape_405
-
-注意：这里我演示的输出矩阵为 1 * 255 * 80 * 80 分别是 batch size(1), filters(255) = ( class numbers(80) + bbox(4)(x, y, h, w) + obj(1) ) * anchor numbers(3),  h, w
-
-实际上这个垃圾分类模型的三个输出矩阵为 1 * ((16+4+1) * 3) * 80 * 80, 1 * ((16+4+1) * 3) * 40 * 40, 1 * ((16+4+1) * 3) * 20 * 20
-
-
-![](./images/016a.png)
-
-2. 图形化修改 ONNX 模型
-
-也可以使用图形化修改模型,使用以下命令拉取源码仓库
-
-```bash
-cd ~/m3axpi
-git clone https://github.com/ZhangGe6/onnx-modifier.git
-```
-
-![](./images/016b.png)
-
-目录如图所示:
-
-![](./images/017.png)
-
-进入目录,使用以下命令安装依赖包
-
-```bash
-cd onnx-modifier
-pip install onnx flask
-```
-![](./images/017a.png)
-
-使用以下命令运行脚本
-```bash
-python app.py
-```
-![](./images/017b.png)
-
-在浏览器地址栏输入 http://127.0.0.1:5000 打开网页,把刚才第三步导出的 best.onnx 文件拖进去, 修改模型结构。
-
-依次选中最后三个卷积(Conv)之后的Reshape, 点击 Delete With Children
-
-![](./images/018a.png)
-
-选中第一个删除 Reshape 上方的 Conv,修改 OUTPUTS 的名字为 Conv_output_0,点击 Add Output 添加输出
-
-
-![](./images/019a.png)
-
-选中第二个 Reshape,点击 Delete With Children
-
-
-![](./images/020a.png)
-
-选中第二个删除 Reshape 上方的 Conv,修改 OUTPUTS 的名字为 Conv_output_1, 点击 Add Output 添加输出
-
-
-![](./images/021a.png)
-
-同样选中第三个删除 Reshape上方的 Conv,修改 OUTPUTS 的名字为 Conv_output_2 , 点击 Add Output 添加输出
-
-
-![](./images/022a.png)
-
-最后点击左上角 Download 下载模型,修改好的模型可以在 modified_onnx 文件夹中找到,修改好的模型名字为 modified_best.onnx
-
-![](./images/023.png)
-
-### 六、打包训练图片
+### 五、打包训练图片
 
 进入数据集的图片目录,使用以下命令打包图片为rubbish_1000.tar,注意文件的扩展名是 .tar
 
@@ -314,7 +236,7 @@ mv ~/m3axpi/datasets/rubbish/images/rubbish_1000.tar ~/m3axpi/dataset
 
 ![](./images/031.png)
 
-### 七、搭建模型转换环境
+### 六、搭建模型转换环境
 
 onnx 模型需要转换为 joint 模型才能在 m3axpi 运行,所以需要使用 pulsar 模型转换工具。注意 pb、tflite、weights、paddle 等模型,需要先转换为 onnx 模型才能使用 pulsar 模型转换工具
 
@@ -434,10 +356,10 @@ pulsar_conf {
 ```
 ![](./images/035.png)
 
-移动编辑好的模型文件 best_cut.onnx 或 modified_best.onnx 到 onnx 目录,使用以下命令进行模型转换:(注意修改模型文件的名字改为自己的模型名字)
+移动导出的模型文件 best.onnx 到 onnx 目录,使用以下命令进行模型转换:(注意修改模型文件的名字改为自己的模型名字)
 
 ```bash
-pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config config/yolov5s_rubbish.prototxt --output_config yolov5s_rubbish.prototxt
+pulsar build --input onnx/best.onnx --output yolov5s_rubbish.joint --config config/yolov5s_rubbish.prototxt --output_config yolov5s_rubbish.prototxt
 ```
 开始转换
 
@@ -455,7 +377,7 @@ pulsar build --input onnx/best_cut.onnx --output yolov5s_rubbish.joint --config 
 
 ![](./images/039.png)
 
-### 八、部署
+### 七、部署
 
 请确认经过了训练后拥有以下文件，最起码得得到 `yolov5s_rubbish.joint` 喔。
 
