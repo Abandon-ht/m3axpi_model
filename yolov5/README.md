@@ -147,6 +147,44 @@ You can see the predicted images in the runs/detect/exp directory.
 
 ![](./images/009.jpg)
 
+Modify the models/yolo.py file (class Detect(nn.Module):)
+
+```python
+    def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+        #     bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+        #     x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+        # 
+        #     if not self.training:  # inference
+        #         if self.dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+        #             self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+        # 
+        #         if isinstance(self, Segment):  # (boxes + masks)
+        #             xy, wh, conf, mask = x[i].split((2, 2, self.nc + 1, self.no - self.nc - 5), 4)
+        #             xy = (xy.sigmoid() * 2 + self.grid[i]) * self.stride[i]  # xy
+        #             wh = (wh.sigmoid() * 2) ** 2 * self.anchor_grid[i]  # wh
+        #             y = torch.cat((xy, wh, conf.sigmoid(), mask), 4)
+        #         else:  # Detect (boxes only)
+        #             xy, wh, conf = x[i].sigmoid().split((2, 2, self.nc + 1), 4)
+        #             xy = (xy * 2 + self.grid[i]) * self.stride[i]  # xy
+        #             wh = (wh * 2) ** 2 * self.anchor_grid[i]  # wh
+        #             y = torch.cat((xy, wh, conf), 4)
+        #         z.append(y.view(bs, self.na * nx * ny, self.no))
+        # 
+        # return x if self.training else (torch.cat(z, 1),) if self.export else (torch.cat(z, 1), x)
+        return x
+```
+
+Modify the export.py file
+
+```python
+    # shape = tuple((y[0] if isinstance(y, tuple) else y).shape)  # model output shape
+    metadata = {'stride': int(max(model.stride)), 'names': model.names}  # model metadata
+    # LOGGER.info(f"\n{colorstr('PyTorch:')} starting from {file} with output shape {shape} ({file_size(file):.1f} MB)")
+```
+
 Use the following command to export the onnx model, pay attention to add the parameter opset=11
 
 ![](./images/010.png)
@@ -167,122 +205,11 @@ The input name of the model is 'images'
 
 Using the model exported before torch1.13.0, the last three convolution (Conv) outputs end with onnx::Reshape_329. The ending numbers of the three convolution (Conv) outputs are not the same. The numbers at the end of your exported model may not be the same as mine.
 
-The output of the first Conv is onnx::Reshape_329
+The output of the first Conv is onnx::Reshape_329 The output of the second Conv is onnx::Reshape_367 The output of the third Conv is onnx::Reshape_405
 
 ![](./images/012a.png)
 
-The output of the second Conv is onnx::Reshape_367
-
-![](./images/013a.png)
-
-The output of the third Conv is onnx::Reshape_405
-
-![](./images/014a.png)
-
-### 5. Modify the ONNX model
-
-Because the exported onnx model has post-processing, and the YOLOv5 model deployed on m3axpi is post-processing implemented through code. So you need to delete the post-processing part of the model. The following scripts can be used to modify the model. Note that if the model is exported with torch1.13.0 and later, please use method 2 described below to use a graphical method to modify the model
-
-1. Modify ONNX model with python script
-
-```python
-import argparse
-import onnx
-
-def onnx_sub():
-    onnx.utils.extract_model(opt.onnx_input, opt.onnx_output, opt.model_input, opt.model_output)
-
-def parse_opt():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--onnx_input', type=str, default='weights/yolov5s.onnx', help='model.onnx path(s)')
-    parser.add_argument('--onnx_output', type=str, default='weights/yolov5s_sub.onnx', help='model_sub.onnx path(s)')
-    parser.add_argument('--model_input', '--input', nargs='+', type=str, default=["images"], help='input_names')
-    parser.add_argument(
-        '--model_output', '--output', nargs='+', type=str, default=["onnx::Reshape_329",
-                                                                    "onnx::Reshape_367",
-                                                                    "onnx::Reshape_405"], help='output_names')
-    opt = parser.parse_args()
-    return opt
-
-if __name__ == "__main__":
-    opt = parse_opt()
-    sub = onnx_sub()
-
-```
-Create a new file named onnxcut.py and copy the above code
-
-Use the following command, be sure to replace the three outputs of the model with the output of the last three convolutions (Conv) of your model
-
-```bash
-python onnxcut.py --onnx_input ./runs/train/exp/weights/best.onnx --onnx_output ./runs/train/exp/weights/best_cut.onnx --model_input images --model_output onnx::Reshape_329 onnx::Reshape_367 onnx::Reshape_405
-```
-
-![](./images/015.png)
-
-The modified model is shown in the picture, and the three outputs are onnx::Reshape_329, onnx::Reshape_367, onnx::Reshape_405
-
-Note: The output matrix I demonstrate here is 1 * 255 * 80 * 80, which are batch size(1), filters(255) = ( class numbers(80) + bbox(4)(x, y, h, w) + obj(1) ) * anchor numbers(3), h, w
-
-In fact, the three output matrices of this rubbish classification model are 1 * ((16+4+1) * 3) * 80 * 80, 1 * ((16+4+1) * 3) * 40 * 40, 1 * ((16+4+1) * 3) * 20 * 20
-
-![](./images/016a.png)
-
-2. use a graphical method to modify the model
-
-You can also modify the model using graphical methods, and use the following command to pull the source code repository
-
-```bash
-cd ~/m3axpi
-git clone https://github.com/ZhangGe6/onnx-modifier.git
-```
-
-![](./images/016b.png)
-
-The directory is as shown in the picture:
-
-![](./images/017.png)
-
-Enter the directory and use the following command to install the dependency package
-
-```bash
-cd onnx-modifier
-pip install onnx flask
-```
-![](./images/017a.png)
-
-Run the script with
-```bash
-python app.py
-```
-![](./images/017b.png)
-
-Enter http://127.0.0.1:5000 in the browser address bar. Open the best.onnx file exported in the third step, and modify the model structure.
-
-Select the Reshape after the last three convolutions (Conv) in turn, and click 'Delete With Children'
-
-![](./images/018a.png)
-
-Select the first one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_0', and click 'Add Output' to add the output
-
-![](./images/019a.png)
-
-Select the second Reshape, click 'Delete With Children'
-
-![](./images/020a.png)
-
-Select the second one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_1', click 'Add Output' to add the output
-
-![](./images/021a.png)
-
-Also select the third one to delete the Conv above 'Reshape', change the name of OUTPUTS to 'Conv_output_2', click 'Add Output' to add the output
-
-![](./images/022a.png)
-
-Finally, download the model. The modified model can be found in the modified_onnx folder. The modified model name is modified_best.onnx
-
-![](./images/023.png)
-
-### 6. Pack training pictures
+### 5. Pack training pictures
 
 Enter the image directory of the dataset, use the following command to package the image as rubbish_1000.tar, note that the extension of the file is .tar
 
@@ -302,7 +229,7 @@ mv ~/m3axpi/datasets/rubbish/images/rubbish_1000.tar ~/m3axpi/dataset
 
 ![](./images/031.png)
 
-### 7. Create a model conversion environment
+### 6. Create a model conversion environment
 
 The onnx model needs to be converted to a joint model to run on m3axpi, so the pulsar model conversion tool needs to be used. Note that pb, tflite, weights, paddle and other models need to be converted to onnx models before using the pulsar model conversion tool
 
@@ -443,7 +370,7 @@ The converted model yolov5s_rubbish.joint can be found in the working directory
 
 ![](./images/039.png)
 
-### 8. Deployment
+### 7. Deployment
 
 Please refer to https://github.com/AXERA-TECH/ax-samples/blob/main/README_EN.md
 (to be continued)
